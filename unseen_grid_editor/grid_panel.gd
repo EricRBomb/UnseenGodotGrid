@@ -184,7 +184,9 @@ func _collect_nodes(node: Node, out: Array[Node], scene_root: Node) -> void:
 		out.append(node)
 
 	for child in node.get_children():
-		_collect_nodes(child, out, scene_root)
+		#We do not want to print out children of instanced nodes, this filters them out.
+		if child.get_scene_file_path() != '':
+			_collect_nodes(child, out, scene_root)
 
 func set_cell_size(new_size: int) -> void:
 	cell_size = new_size
