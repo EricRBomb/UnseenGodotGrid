@@ -36,7 +36,7 @@ func _enter_tree() -> void:
 	header.add_child(cell_size_control)
 	
 	# Create the grid from script
-	var grid_panel_script = load("res://addons/gmap_grid_editor/grid_panel.gd")
+	var grid_panel_script = load("res://addons/unseen_grid_editor/grid_panel.gd")
 	grid = grid_panel_script.new()
 	vbox.add_child(grid)
 
