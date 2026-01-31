@@ -2,7 +2,9 @@
 
 Addon for Godot that creates a new main window copies basic functionalities of scene editor but is accessible via screen reader and keyboard controls. 
 
-It allows moving, copying, and selecting items in a scene and is attached to the inspector, so selecting an instance in a scene pulls up that instances inspector.
+It allows moving, copying, and selecting nodes/instances in a scene and is attached to the inspector, so selecting an instance in a scene pulls up that instances inspector.
+Note on instancing a scene:
+Ctrl+SHIFT+A - While in the scene tree opens a list of all scenes that you can then "instance" inside of the current scene, and you can copy/move/modify the instanced scene freely.
 
 Install:
 
