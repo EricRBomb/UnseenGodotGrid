@@ -50,6 +50,50 @@ func _build_grid() -> void:
 			focus_map.append(line_edit)
 		cells.append(row)
 
+#used in refresh from scene
+func _collect_tilemap_layer(layer: TileMapLayer) -> void:
+	var used_cells: Array = layer.get_used_cells()
+	var tileset: TileSet = layer.tile_set
+	var physics_layer_count: int = tileset.get_physics_layers_count()
+	
+	for tile_coords in used_cells:
+		var world_pos: Vector2 = layer.to_global(layer.map_to_local(tile_coords))
+		
+		var gx := int(floor(world_pos.x / cell_size))
+		var gy := int(floor(world_pos.y / cell_size))
+		
+		if gx < 0 or gy < 0 or gx >= GRID_SIZE or gy >= GRID_SIZE:
+			continue
+		
+		var key := Vector2i(gx, gy)
+		var cell: Label = cells[gy][gx]
+		
+		if not node_map.has(key):
+			node_map[key] = []
+		
+		if not node_map[key].has(layer):
+			node_map[key].append(layer)
+		
+		var atlas_coords: Vector2i = layer.get_cell_atlas_coords(tile_coords)
+		var tile_label: String = "%s[%d,%d]" % [layer.name, atlas_coords.x, atlas_coords.y]
+		
+		var tile_data: TileData = layer.get_cell_tile_data(tile_coords)
+		if tile_data:
+			var collision_mask: int = 0
+			for i in range(physics_layer_count):
+				if tile_data.get_collision_polygons_count(i) > 0:
+					collision_mask |= tileset.get_physics_layer_collision_layer(i)
+			if collision_mask != 0:
+				if layer.collision_enabled:
+					tile_label += " solid:%s" % "%b" % collision_mask
+				else:
+					tile_label += " solid(disabled):%s" % "%b" % collision_mask
+		
+		if cell.text.is_empty():
+			cell.text = tile_label
+		else:
+			cell.text += ", " + tile_label
+
 func refresh_from_scene(scene_root: Node) -> void:
 	if scene_root == null:
 		return
@@ -63,14 +107,18 @@ func refresh_from_scene(scene_root: Node) -> void:
 
 	var nodes: Array[Node] = []
 	_collect_nodes(scene_root, nodes,scene_root)
+	print(nodes)
 
 	for node in nodes:
 		if not node is CanvasItem:
 			continue
-
 		var pos: Vector2
-
-		if node is Node2D:
+		
+		#skipping tile map layers, to do them at the end.
+		if node is TileMapLayer:
+			#_collect_tilemap_layer(node)
+			continue
+		elif node is Node2D:
 			pos = node.global_position
 		elif node is Control:
 			pos = node.global_position
@@ -98,6 +146,11 @@ func refresh_from_scene(scene_root: Node) -> void:
 			cell.text = node.name
 		else:
 			cell.text += ", " + node.name
+	#adding tilemap layer info to the end.
+	for node in nodes:
+		if node is TileMapLayer:
+			_collect_tilemap_layer(node)
+
 
 func _on_cell_focused(x: int, y: int) -> void:
 	current_focused_cell = Vector2i(x, y)
@@ -182,11 +235,11 @@ func _show_node_selection_popup(nodes: Array, x: int, y: int) -> void:
 func _collect_nodes(node: Node, out: Array[Node], scene_root: Node) -> void:
 	if node != scene_root:
 		out.append(node)
-
+		# If this node is an instanced scene, don't recurse into its children
+		if node.get_scene_file_path() != '':
+			return
 	for child in node.get_children():
-		#We do not want to print out children of instanced nodes, this filters them out.
-		if child.get_scene_file_path() != '':
-			_collect_nodes(child, out, scene_root)
+		_collect_nodes(child, out, scene_root)
 
 func set_cell_size(new_size: int) -> void:
 	cell_size = new_size
